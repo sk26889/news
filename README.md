@@ -1,5 +1,5 @@
 <p align="center">
-  <strong>IMPORTANT DISCLAIMER - FOR LEARNING ONLY</strong>
+  <strong>IMPORTANT DISCLAIMER - FOR LEARNING ONLY ⚠️</strong>
 </p>
 
 This webshell collection is intended exclusively for educational and cybersecurity research purposes.
