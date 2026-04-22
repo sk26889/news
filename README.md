@@ -1,6 +1,4 @@
-<p align="center">
-  <strong>IMPORTANT DISCLAIMER - FOR LEARNING ONLY ⚠️</strong>
-</p>
+## IMPORTANT DISCLAIMER - FOR LEARNING ONLY ⚠️
 
 This webshell collection is intended exclusively for educational and cybersecurity research purposes.
 
