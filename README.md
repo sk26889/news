@@ -1,11 +1,12 @@
-⚠️ IMPORTANT DISCLAIMER - FOR LEARNING ONLY ⚠️
+## Disclaimer
 
-This webshell collection is exclusively for educational and cybersecurity research purposes.
+> **This webshell collection is intended solely for educational and cybersecurity research purposes.**
+> 
+> - Use only in controlled environments that you own or are authorized to test.
+> - Do not use for attacks, unauthorized access, or any harmful activity.
+> - Any misuse, illegal actions, or violations are the sole responsibility of the user.
+> - The authors assume no liability for damages, legal claims, or consequences arising from its use.
 
-   • Use only in your own controlled lab/test environments.
+---
 
-   • DO NOT use for attacks, unauthorized access, or any harmful activities.
-
-   • Any misuse (including illegal actions) is solely the user's responsibility, not the creators'.
-
-We disclaim all liability for damages, legal claims, or consequences arising from its use. Learn to defend, not to attack! 🔒
+**Learn to defend, not to attack.**
