@@ -1,0 +1,182 @@
+#!/usr/bin/env python3
+"""
+Path Generator untuk Domain List
+Input: domains.txt (bisa domain aja atau sudah pakai protocol)
+       Contoh: 
+         abc.gob.ar
+         http://abc.gob.ar
+         https://abc.gob.ar
+Output: hasil_path.txt (domain + custom path)
+"""
+
+import sys
+import os
+import re
+
+def extract_domain_from_url(url):
+    """Ekstrak domain dari URL (hapus protocol)"""
+    url = url.strip()
+    # Hapus protocol
+    url = re.sub(r'^https?://', '', url)
+    # Hapus path jika ada
+    url = url.split('/')[0]
+    return url
+
+def show_path_menu():
+    """Tampilkan menu preset paths"""
+    paths = {
+        '1': '/config.inc.php',
+        '2': '/public/site/images',
+        '3': '/files/journals/',
+        '4': '/index.php/index/oai',
+        '5': '/plugins/generic/',
+        '6': '/lib/pkp/',
+        '7': '/cache/',
+        '8': '/admin/index.php',
+        '9': '/ojs/index.php',
+        '10': 'Custom (ketik sendiri)'
+    }
+    
+    print("\n" + "=" * 70)
+    print("PILIH PATH YANG AKAN DITAMBAHKAN")
+    print("=" * 70)
+    for key, path in paths.items():
+        if key == '10':
+            print(f"{key}. {path}")
+        else:
+            print(f"{key}. {path}")
+    print("=" * 70)
+    
+    while True:
+        choice = input("\nPilih path (1-10): ").strip()
+        if choice in paths:
+            if choice == '10':
+                print("\n" + "-" * 70)
+                custom_path = input("Masukkan custom path: ").strip()
+                if custom_path and not custom_path.startswith('/'):
+                    custom_path = '/' + custom_path
+                print("-" * 70)
+                return custom_path
+            else:
+                return paths[choice]
+        print("⚠ Pilihan tidak valid! Pilih 1-10")
+
+def preserve_protocol_and_add_path(line, path):
+    """
+    Preserve protocol dari input, tambah path
+    Input bisa: 
+      - abc.gob.ar
+      - http://abc.gob.ar
+      - https://abc.gob.ar
+      - abc.gob.ar/some/path
+    """
+    line = line.strip()
+    if not line:
+        return None
+    
+    # Cek apakah sudah ada protocol
+    if line.startswith('https://'):
+        domain_part = line[8:]  # Hapus https://
+        protocol = 'https://'
+    elif line.startswith('http://'):
+        domain_part = line[7:]  # Hapus http://
+        protocol = 'http://'
+    else:
+        # Tidak ada protocol, default ke https://
+        domain_part = line
+        protocol = 'https://'
+    
+    # Ambil domain aja (tanpa path yang mungkin sudah ada)
+    domain = domain_part.split('/')[0]
+    
+    # Gabungkan
+    return f"{protocol}{domain}{path}"
+
+def main():
+    input_file = "domains.txt"
+    output_file = "hasil_path.txt"
+    
+    print("=" * 70)
+    print("PATH GENERATOR - Tambah Path ke Domain List")
+    print("=" * 70)
+    
+    # Cek file input
+    if not os.path.exists(input_file):
+        print(f"\n✗ Error: File '{input_file}' tidak ditemukan!")
+        print(f"\nBuat file {input_file} dan isi dengan list domain (satu per baris)")
+        print("\nContoh isi domains.txt:")
+        print("  abc.gob.ar")
+        print("  http://abc.gob.ar")
+        print("  https://revistas.unsm.edu.pe")
+        return
+    
+    # Baca domain dari file
+    try:
+        with open(input_file, 'r', encoding='utf-8') as f:
+            lines = [line.strip() for line in f if line.strip()]
+        print(f"\n✓ Membaca {len(lines)} entri dari: {input_file}")
+    except Exception as e:
+        print(f"\n✗ Error membaca file: {e}")
+        return
+    
+    if not lines:
+        print("\n⚠ Tidak ada data ditemukan di file!")
+        return
+    
+    # Preview input (tampilkan format asli)
+    print("\nPreview input (format asli):")
+    print("-" * 70)
+    for i, line in enumerate(lines[:10], 1):
+        print(f"{i:3d}. {line}")
+    if len(lines) > 10:
+        print(f"     ... dan {len(lines)-10} lainnya")
+    
+    # Tampilkan info protocol yang terdeteksi
+    has_http = any(line.startswith('http://') for line in lines)
+    has_https = any(line.startswith('https://') for line in lines)
+    has_no_protocol = any(not line.startswith(('http://', 'https://')) for line in lines)
+    
+    print("\n📊 Deteksi Protocol:")
+    print("-" * 70)
+    if has_https:
+        print(f"  ✓ Ada yang pakai https://")
+    if has_http:
+        print(f"  ✓ Ada yang pakai http://")
+    if has_no_protocol:
+        print(f"  ✓ Ada yang tanpa protocol (akan ditambahkan https://)")
+    
+    # Pilih path
+    selected_path = show_path_menu()
+    
+    # Generate hasil (preserve protocol asli)
+    results = []
+    for line in lines:
+        result = preserve_protocol_and_add_path(line, selected_path)
+        if result:
+            results.append(result)
+    
+    # Simpan ke file
+    with open(output_file, 'w', encoding='utf-8') as f:
+        for url in results:
+            f.write(url + '\n')
+    
+    # Tampilkan preview hasil
+    print("\n" + "=" * 70)
+    print("HASIL GENERATOR")
+    print("=" * 70)
+    print(f"\n✓ Path yang ditambahkan: {selected_path}")
+    print(f"✓ Total URL dihasilkan: {len(results)}")
+    
+    print("\nPreview hasil (protocol dipertahankan):")
+    print("-" * 70)
+    for i, url in enumerate(results[:10], 1):
+        print(f"{i:3d}. {url}")
+    if len(results) > 10:
+        print(f"     ... dan {len(results)-10} lainnya")
+    
+    print("\n" + "=" * 70)
+    print(f"✓ Hasil disimpan ke: {output_file}")
+    print("=" * 70)
+
+if __name__ == "__main__":
+    main()
