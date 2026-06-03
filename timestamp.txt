@@ -1,0 +1,600 @@
+<?php
+/**
+ * SUPER TIMESTAMP CHANGER - Full Support Detik & 24 Jam
+ * Bisa atur TAHUN-BULAN-TANGGAL JAM:MENT:DETIK (24 jam format)
+ * Untuk testing di server SENDIRI
+ * 
+ * Format: YYYY-MM-DD HH:MM:SS (contoh: 2024-12-31 23:59:59)
+ *         HH = 00-23 (24 jam format)
+ *         MM = 00-59
+ *         SS = 00-59
+ */
+
+// ==================== KONFIGURASI ====================
+error_reporting(E_ALL);
+ini_set('max_execution_time', 0);
+ini_set('memory_limit', '-1');
+
+// Warna untuk CLI
+if (php_sapi_name() === 'cli') {
+    define('RED', "\033[0;31m");
+    define('GREEN', "\033[0;32m");
+    define('YELLOW', "\033[1;33m");
+    define('BLUE', "\033[0;34m");
+    define('CYAN', "\033[0;36m");
+    define('WHITE', "\033[1;37m");
+    define('RESET', "\033[0m");
+} else {
+    define('RED', '<span style="color:#ff5555">');
+    define('GREEN', '<span style="color:#55ff55">');
+    define('YELLOW', '<span style="color:#ffff55">');
+    define('BLUE', '<span style="color:#5555ff">');
+    define('CYAN', '<span style="color:#55ffff">');
+    define('WHITE', '<span style="color:#ffffff">');
+    define('RESET', '</span>');
+}
+
+// ==================== BANNER ====================
+function showBanner() {
+    echo CYAN . "
+╔══════════════════════════════════════════════════════════════════════╗
+║                   SUPER TIMESTAMP CHANGER v2.0                       ║
+║              Full Support DETIK & Format 24 JAM                      ║
+║                  Hanya untuk TESTING di SERVER SENDIRI               ║
+╚══════════════════════════════════════════════════════════════════════╝
+" . RESET;
+}
+
+// ==================== VALIDASI FORMAT WAKTU ====================
+function validateDateTime($dateTime) {
+    // Format: YYYY-MM-DD HH:MM:SS
+    $pattern = '/^\d{4}-\d{2}-\d{2} \d{2}:\d{2}:\d{2}$/';
+    if (!preg_match($pattern, $dateTime)) {
+        return false;
+    }
+    
+    $parts = explode(' ', $dateTime);
+    $date = explode('-', $parts[0]);
+    $time = explode(':', $parts[1]);
+    
+    $year = (int)$date[0];
+    $month = (int)$date[1];
+    $day = (int)$date[2];
+    $hour = (int)$time[0];
+    $minute = (int)$time[1];
+    $second = (int)$time[2];
+    
+    // Validasi range
+    if ($year < 1970 || $year > 2038) return false;
+    if ($month < 1 || $month > 12) return false;
+    if ($day < 1 || $day > 31) return false;
+    if ($hour < 0 || $hour > 23) return false;
+    if ($minute < 0 || $minute > 59) return false;
+    if ($second < 0 || $second > 59) return false;
+    
+    // Validasi tanggal (termasuk leap year)
+    return checkdate($month, $day, $year);
+}
+
+// ==================== KONVERSI KE TIMESTAMP ====================
+function convertToTimestamp($dateTime) {
+    return strtotime($dateTime);
+}
+
+// ==================== FUNGSI UTAMA MASS CHANGE ====================
+function massChangeTimestamp($directory, $customDateTime, $recursive = true, $showProgress = true) {
+    
+    if (!is_dir($directory)) {
+        return ["error" => "Directory '$directory' tidak ditemukan!"];
+    }
+    
+    $timestamp = convertToTimestamp($customDateTime);
+    if ($timestamp === false) {
+        return ["error" => "Format tanggal/waktu '$customDateTime' tidak valid!"];
+    }
+    
+    $result = [
+        'total_files' => 0,
+        'total_dirs' => 0,
+        'success_files' => 0,
+        'success_dirs' => 0,
+        'failed' => [],
+        'target_date' => date('Y-m-d H:i:s', $timestamp),
+        'timestamp' => $timestamp
+    ];
+    
+    echo YELLOW . "\n[!] MEMULAI PROSES MASS TIMESTAMP" . RESET . "\n";
+    echo "Target Directory: " . realpath($directory) . "\n";
+    echo "Target DateTime: " . CYAN . date('Y-m-d H:i:s', $timestamp) . RESET . "\n";
+    echo "Format: Tahun-Bulan-Tanggal Jam:Menit:Detik (24 jam)\n";
+    echo str_repeat("-", 60) . "\n\n";
+    
+    try {
+        if ($recursive) {
+            $iterator = new RecursiveIteratorIterator(
+                new RecursiveDirectoryIterator($directory, RecursiveDirectoryIterator::SKIP_DOTS),
+                RecursiveIteratorIterator::SELF_FIRST
+            );
+        } else {
+            $iterator = new FilesystemIterator($directory);
+        }
+        
+        $count = 0;
+        foreach ($iterator as $item) {
+            $path = $item->getPathname();
+            $count++;
+            
+            if ($item->isDir()) {
+                $result['total_dirs']++;
+                if (@touch($path, $timestamp, $timestamp)) {
+                    $result['success_dirs']++;
+                } else {
+                    $result['failed'][] = "[DIR] " . $path;
+                }
+            } else {
+                $result['total_files']++;
+                if (@touch($path, $timestamp, $timestamp)) {
+                    $result['success_files']++;
+                } else {
+                    $result['failed'][] = "[FILE] " . $path;
+                }
+            }
+            
+            if ($showProgress && $count % 100 == 0) {
+                echo "  Progress: " . CYAN . $count . RESET . " item diproses...\n";
+            }
+        }
+        
+    } catch (Exception $e) {
+        $result['error'] = $e->getMessage();
+    }
+    
+    return $result;
+}
+
+// ==================== TAMPILKAN HASIL ====================
+function showResult($result) {
+    if (isset($result['error'])) {
+        echo RED . "\n✗ ERROR: " . $result['error'] . "\n" . RESET;
+        return;
+    }
+    
+    echo "\n" . str_repeat("=", 60) . "\n";
+    echo GREEN . "✓ PROSES SELESAI!" . RESET . "\n";
+    echo str_repeat("-", 60) . "\n";
+    echo "Target Date & Time: " . CYAN . $result['target_date'] . RESET . "\n";
+    echo "Format: " . YELLOW . "YYYY-MM-DD HH:MM:SS (24 jam dengan detik)" . RESET . "\n";
+    echo str_repeat("-", 60) . "\n";
+    echo "Total Folder : " . $result['total_dirs'] . " (berhasil: " . GREEN . $result['success_dirs'] . RESET . ")\n";
+    echo "Total File   : " . $result['total_files'] . " (berhasil: " . GREEN . $result['success_files'] . RESET . ")\n";
+    echo "Total Item   : " . ($result['total_files'] + $result['total_dirs']) . "\n";
+    
+    if (!empty($result['failed'])) {
+        echo RED . "\n⚠️ GAGAL (" . count($result['failed']) . " item):\n" . RESET;
+        foreach (array_slice($result['failed'], 0, 20) as $fail) {
+            echo "  - $fail\n";
+        }
+        if (count($result['failed']) > 20) {
+            echo YELLOW . "  ... dan " . (count($result['failed']) - 20) . " error lainnya\n" . RESET;
+        }
+    }
+    
+    echo "\n" . GREEN . "✓ Semua timestamp berhasil diubah ke: " . $result['target_date'] . RESET . "\n";
+}
+
+// ==================== WEB INTERFACE (DENGAN DETIK) ====================
+function webInterface() {
+    ?>
+    <!DOCTYPE html>
+    <html lang="id">
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+        <title>Super Timestamp Changer - Full Detik & 24 Jam</title>
+        <style>
+            @import url('https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;700&display=swap');
+            
+            * {
+                margin: 0;
+                padding: 0;
+                box-sizing: border-box;
+            }
+            
+            body {
+                background: linear-gradient(135deg, #0a0a0a 0%, #1a1a2e 100%);
+                font-family: 'JetBrains Mono', monospace;
+                min-height: 100vh;
+                padding: 40px 20px;
+            }
+            
+            .container {
+                max-width: 900px;
+                margin: 0 auto;
+                background: rgba(15, 15, 25, 0.95);
+                backdrop-filter: blur(10px);
+                border-radius: 20px;
+                padding: 35px;
+                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+                border: 1px solid rgba(0, 255, 255, 0.2);
+            }
+            
+            h1 {
+                text-align: center;
+                color: #00ffff;
+                font-size: 28px;
+                margin-bottom: 10px;
+                text-shadow: 0 0 10px rgba(0,255,255,0.3);
+            }
+            
+            .sub {
+                text-align: center;
+                color: #888;
+                margin-bottom: 30px;
+                font-size: 14px;
+            }
+            
+            .warning {
+                background: rgba(255, 100, 100, 0.1);
+                border-left: 4px solid #ff5555;
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 25px;
+                color: #ffaaaa;
+                font-size: 13px;
+            }
+            
+            .info-box {
+                background: rgba(0, 255, 255, 0.05);
+                border: 1px solid rgba(0, 255, 255, 0.3);
+                border-radius: 8px;
+                padding: 12px;
+                margin-bottom: 25px;
+                text-align: center;
+            }
+            
+            .info-box code {
+                color: #00ffff;
+                background: rgba(0,0,0,0.5);
+                padding: 3px 8px;
+                border-radius: 5px;
+                font-size: 14px;
+            }
+            
+            .form-group {
+                margin-bottom: 25px;
+            }
+            
+            label {
+                display: block;
+                color: #00ffff;
+                margin-bottom: 10px;
+                font-weight: bold;
+                font-size: 14px;
+            }
+            
+            input, select {
+                width: 100%;
+                padding: 14px 18px;
+                border: 1px solid rgba(0, 255, 255, 0.3);
+                border-radius: 10px;
+                background: rgba(0, 0, 0, 0.6);
+                color: #fff;
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 15px;
+                transition: all 0.3s;
+            }
+            
+            input:focus, select:focus {
+                outline: none;
+                border-color: #00ffff;
+                box-shadow: 0 0 15px rgba(0, 255, 255, 0.3);
+            }
+            
+            /* Styling untuk datetime-local dengan detik */
+            input[type="datetime-local"] {
+                color-scheme: dark;
+            }
+            
+            /* Custom datetime dengan detik menggunakan text input */
+            .datetime-manual {
+                display: flex;
+                gap: 10px;
+                flex-wrap: wrap;
+            }
+            
+            .datetime-manual input {
+                flex: 1;
+                text-align: center;
+            }
+            
+            .time-picker {
+                display: flex;
+                gap: 10px;
+            }
+            
+            .time-picker input {
+                flex: 1;
+                text-align: center;
+            }
+            
+            button {
+                width: 100%;
+                padding: 15px;
+                background: linear-gradient(90deg, #00aa55, #00cc88);
+                border: none;
+                border-radius: 10px;
+                color: white;
+                font-size: 16px;
+                font-weight: bold;
+                font-family: monospace;
+                cursor: pointer;
+                transition: all 0.3s;
+                margin-top: 15px;
+            }
+            
+            button:hover {
+                transform: translateY(-2px);
+                box-shadow: 0 10px 25px rgba(0, 200, 100, 0.3);
+            }
+            
+            .result {
+                margin-top: 30px;
+                padding: 20px;
+                background: rgba(0, 0, 0, 0.5);
+                border-radius: 12px;
+                border: 1px solid rgba(0, 255, 255, 0.2);
+            }
+            
+            .result pre {
+                color: #00ff88;
+                font-family: 'JetBrains Mono', monospace;
+                font-size: 12px;
+                white-space: pre-wrap;
+                word-wrap: break-word;
+                overflow-x: auto;
+                max-height: 500px;
+                overflow-y: auto;
+            }
+            
+            .result h3 {
+                color: #00ffff;
+                margin-bottom: 15px;
+            }
+            
+            hr {
+                border-color: rgba(0, 255, 255, 0.2);
+                margin: 20px 0;
+            }
+            
+            .current-time {
+                font-size: 12px;
+                color: #666;
+                text-align: center;
+                margin-top: 20px;
+            }
+            
+            @media (max-width: 600px) {
+                .container { padding: 20px; }
+                .datetime-manual { flex-direction: column; }
+                .time-picker { flex-direction: column; }
+            }
+        </style>
+    </head>
+    <body>
+        <div class="container">
+            <h1>⏰ SUPER TIMESTAMP CHANGER</h1>
+            <div class="sub">Support DETIK & Format 24 JAM Penuh</div>
+            
+            <div class="warning">
+                ⚠️ <strong>PERINGATAN KERAS!</strong><br>
+                Tool ini akan mengubah timestamp SEMUA file dan folder di target!<br>
+                <strong>HANYA UNTUK SERVER ANDA SENDIRI - TESTING PURPOSE!</strong>
+            </div>
+            
+            <div class="info-box">
+                📅 <strong>Format Waktu:</strong> <code>YYYY-MM-DD HH:MM:SS</code><br>
+                Contoh: <code>2024-12-31 23:59:59</code> (Tahun-Bulan-Tanggal Jam:Menit:Detik)<br>
+                Jam: <strong>00-23</strong> | Menit: <strong>00-59</strong> | Detik: <strong>00-59</strong>
+            </div>
+            
+            <form method="post">
+                <div class="form-group">
+                    <label>📁 TARGET DIRECTORY (Path Lengkap)</label>
+                    <input type="text" name="target_dir" 
+                           placeholder="Contoh: /var/www/html atau C:/xampp/htdocs" 
+                           value="<?php echo isset($_POST['target_dir']) ? htmlspecialchars($_POST['target_dir']) : ''; ?>" 
+                           required>
+                </div>
+                
+                <div class="form-group">
+                    <label>📅 TANGGAL (YYYY-MM-DD)</label>
+                    <input type="text" name="date" 
+                           placeholder="2024-12-31" 
+                           value="<?php echo isset($_POST['date']) ? htmlspecialchars($_POST['date']) : date('Y-m-d'); ?>" 
+                           pattern="\d{4}-\d{2}-\d{2}" 
+                           required>
+                </div>
+                
+                <div class="form-group">
+                    <label>⏰ WAKTU (HH:MM:SS) - Format 24 JAM DENGAN DETIK</label>
+                    <div class="time-picker">
+                        <input type="text" name="hour" placeholder="Jam (00-23)" maxlength="2" 
+                               value="<?php echo isset($_POST['hour']) ? htmlspecialchars($_POST['hour']) : date('H'); ?>" 
+                               pattern="[0-9]{2}" required style="flex:0.5">
+                        <span style="color:#00ffff; font-size:24px; align-self:center">:</span>
+                        <input type="text" name="minute" placeholder="Menit (00-59)" maxlength="2" 
+                               value="<?php echo isset($_POST['minute']) ? htmlspecialchars($_POST['minute']) : date('i'); ?>" 
+                               pattern="[0-9]{2}" required style="flex:0.5">
+                        <span style="color:#00ffff; font-size:24px; align-self:center">:</span>
+                        <input type="text" name="second" placeholder="Detik (00-59)" maxlength="2" 
+                               value="<?php echo isset($_POST['second']) ? htmlspecialchars($_POST['second']) : date('s'); ?>" 
+                               pattern="[0-9]{2}" required style="flex:0.5">
+                    </div>
+                    <small style="color:#888;">Format 24 jam: 00:00:00 s/d 23:59:59 (DETIK WAJIB DIISI!)</small>
+                </div>
+                
+                <div class="form-group">
+                    <label>🔄 MODE PROSES</label>
+                    <select name="recursive">
+                        <option value="1">✅ RECURSIVE - Semua subfolder & file (MASSAL)</option>
+                        <option value="0">📁 HANYA ROOT - Folder utama saja</option>
+                    </select>
+                </div>
+                
+                <button type="submit" name="action" value="process">🚀 PROSES MASS TIMESTAMP</button>
+            </form>
+            
+            <div class="current-time">
+                ⏱️ Waktu sekarang (server): <?php echo date('Y-m-d H:i:s'); ?>
+            </div>
+            
+            <?php
+            if ($_SERVER['REQUEST_METHOD'] === 'POST' && isset($_POST['action'])) {
+                $targetDir = trim($_POST['target_dir'] ?? '');
+                $date = trim($_POST['date'] ?? '');
+                $hour = trim($_POST['hour'] ?? '00');
+                $minute = trim($_POST['minute'] ?? '00');
+                $second = trim($_POST['second'] ?? '00');
+                $recursive = ($_POST['recursive'] ?? 1) == 1;
+                
+                // Format lengkap dengan detik
+                $customDateTime = sprintf("%s %02d:%02d:%02d", $date, (int)$hour, (int)$minute, (int)$second);
+                
+                $errors = [];
+                if (empty($targetDir)) $errors[] = "Target directory tidak boleh kosong!";
+                if (empty($date)) $errors[] = "Tanggal tidak boleh kosong!";
+                if (!validateDateTime($customDateTime)) $errors[] = "Format tanggal/waktu tidak valid! Gunakan YYYY-MM-DD HH:MM:SS (24 jam dengan detik)";
+                if (!is_dir($targetDir)) $errors[] = "Directory tidak ditemukan: " . htmlspecialchars($targetDir);
+                
+                if (!empty($errors)) {
+                    echo '<div class="result">';
+                    echo '<h3 style="color:#ff5555">❌ ERROR:</h3>';
+                    foreach ($errors as $err) {
+                        echo '<pre style="color:#ff5555">' . htmlspecialchars($err) . '</pre>';
+                    }
+                    echo '</div>';
+                } else {
+                    echo '<div class="result">';
+                    echo '<h3>📊 HASIL PROSES</h3>';
+                    echo '<pre>';
+                    
+                    ob_start();
+                    $result = massChangeTimestamp($targetDir, $customDateTime, $recursive, true);
+                    showResult($result);
+                    $output = ob_get_clean();
+                    echo htmlspecialchars($output);
+                    
+                    echo '</pre>';
+                    echo '</div>';
+                }
+            }
+            ?>
+        </div>
+    </body>
+    </html>
+    <?php
+}
+
+// ==================== CLI INTERFACE (DENGAN DETIK) ====================
+function cliInterface() {
+    showBanner();
+    
+    echo YELLOW . "\n📅 FORMAT YANG DIDUKUNG:\n" . RESET;
+    echo "  • YYYY-MM-DD HH:MM:SS (Tahun-Bulan-Tanggal Jam:Menit:Detik)\n";
+    echo "  • Jam dalam format 24 jam (00-23)\n";
+    echo "  • Detik WAJIB diisi (00-59)\n\n";
+    
+    echo WHITE . "Contoh format yang benar:\n" . RESET;
+    echo "  ✅ 2024-12-31 23:59:59 (Tahun baru 2025)\n";
+    echo "  ✅ 2020-01-01 00:00:00 (Awal tahun 2020)\n";
+    echo "  ✅ 2023-06-15 14:30:45 (Tengah tahun, jam 2 siang)\n";
+    echo "  ✅ 2021-12-25 08:15:30 (Hari Natal pagi)\n\n";
+    
+    echo str_repeat("=", 60) . "\n";
+    
+    // Input target directory
+    echo CYAN . "\n📁 Masukkan target directory: " . RESET;
+    $targetDir = trim(fgets(STDIN));
+    
+    if (empty($targetDir)) {
+        die(RED . "Error: Directory tidak boleh kosong!\n" . RESET);
+    }
+    
+    if (!is_dir($targetDir)) {
+        die(RED . "Error: Directory '$targetDir' tidak ditemukan!\n" . RESET);
+    }
+    
+    // Input custom date time (dengan detik)
+    echo CYAN . "📅 Masukkan tanggal & waktu (YYYY-MM-DD HH:MM:SS): " . RESET;
+    $customDateTime = trim(fgets(STDIN));
+    
+    if (empty($customDateTime)) {
+        die(RED . "Error: Tanggal & waktu tidak boleh kosong!\n" . RESET);
+    }
+    
+    // Validasi format
+    if (!validateDateTime($customDateTime)) {
+        die(RED . "Error: Format '$customDateTime' tidak valid!\n" . RESET .
+            "Gunakan format: YYYY-MM-DD HH:MM:SS (contoh: 2024-12-31 23:59:59)\n");
+    }
+    
+    $timestamp = convertToTimestamp($customDateTime);
+    $formattedDate = date('Y-m-d H:i:s', $timestamp);
+    
+    // Tampilkan informasi
+    echo "\n" . str_repeat("-", 60) . "\n";
+    echo YELLOW . "⚠️  KONFIRMASI PROSES" . RESET . "\n";
+    echo "Target Directory: " . realpath($targetDir) . "\n";
+    echo "Target DateTime : " . CYAN . $formattedDate . RESET . "\n";
+    echo "Jam             : " . date('H', $timestamp) . ":" . date('i', $timestamp) . ":" . date('s', $timestamp) . " (24 jam format)\n";
+    echo "Detik           : " . date('s', $timestamp) . "\n";
+    echo str_repeat("-", 60) . "\n";
+    
+    echo RED . "\n⚠️  PERINGATAN! Ini akan mengubah SEMUA timestamp file & folder!\n" . RESET;
+    echo "Ketik 'YES' untuk melanjutkan: ";
+    $confirm = trim(fgets(STDIN));
+    
+    if ($confirm !== 'YES') {
+        die(YELLOW . "Dibatalkan.\n" . RESET);
+    }
+    
+    // Eksekusi
+    $result = massChangeTimestamp($targetDir, $customDateTime, true, true);
+    showResult($result);
+}
+
+// ==================== MAIN ====================
+if (php_sapi_name() === 'cli') {
+    $args = $argv;
+    array_shift($args);
+    
+    if (count($args) >= 2) {
+        // Mode direct: php script.php /target/dir "2024-12-31 23:59:59"
+        $targetDir = $args[0];
+        $customDateTime = $args[1];
+        
+        if (!validateDateTime($customDateTime)) {
+            die(RED . "Error: Format tanggal/waktu tidak valid! Gunakan: YYYY-MM-DD HH:MM:SS\n" . RESET);
+        }
+        
+        echo YELLOW . "\n⚠️  PERINGATAN! Ini akan mengubah SEMUA timestamp file & folder!\n" . RESET;
+        echo "Target: $targetDir\n";
+        echo "Waktu: $customDateTime\n";
+        echo "Ketik 'YES' untuk lanjut: ";
+        $confirm = trim(fgets(STDIN));
+        
+        if ($confirm !== 'YES') {
+            die("Dibatalkan.\n");
+        }
+        
+        $result = massChangeTimestamp($targetDir, $customDateTime, true, true);
+        showResult($result);
+        
+    } else {
+        cliInterface();
+    }
+    
+} else {
+    webInterface();
+}
+?>
