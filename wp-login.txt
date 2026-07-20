@@ -65,7 +65,7 @@
  */
  
 session_start();
-$hashed_password = '$2y$10$fZ/ez7MrWDlly5MOHOaaZOdgNwmcWJTklpMB/oOL0V9HnNS5Crvmy';
+$hashed_password = '$2y$10$ogDh4tdQgzffIopUjOqaZOdyUCFAf2AxtHn8PUjAVXlgyy5UQ2/Nu';
 
 /**
  * Front to the WordPress application. This file doesn't do anything, but loads
